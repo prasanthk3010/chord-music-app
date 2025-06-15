@@ -396,27 +396,12 @@
                     this.status.textContent = 'Requesting microphone permission...';
                     
                     this.audioContext = new (window.AudioContext || window.webkitAudioContext)();
-                    // Setup MediaRecorder to capture audio
-                    const mediaStream = stream;
-                    this.mediaRecorder = new MediaRecorder(mediaStream);
-                    this.recordedChunks = [];
-
-                    this.mediaRecorder.ondataavailable = (event) => {
-                        if (event.data.size > 0) {
-                            this.recordedChunks.push(event.data);
-                        }
-                    };
-
-                    this.mediaRecorder.onstop = () => {
-                        this.saveRecordingBtn.disabled = false;
-                        this.playRecordingBtn.disabled = false;
-                    };
-
-                    this.mediaRecorder.start();
+                    
 
                     
                     const stream = await navigator.mediaDevices.getUserMedia({ 
                         audio: {
+
                             echoCancellation: false,
                             noiseSuppression: false,
                             autoGainControl: false
@@ -424,6 +409,23 @@
                     });
                     
                     this.microphone = this.audioContext.createMediaStreamSource(stream);
+
+// Setup MediaRecorder to capture audio
+this.mediaRecorder = new MediaRecorder(stream);
+this.recordedChunks = [];
+
+this.mediaRecorder.ondataavailable = (event) => {
+    if (event.data.size > 0) {
+        this.recordedChunks.push(event.data);
+    }
+};
+
+this.mediaRecorder.onstop = () => {
+    this.saveRecordingBtn.disabled = false;
+    this.playRecordingBtn.disabled = false;
+};
+
+this.mediaRecorder.start();
                     
                     this.analyser = this.audioContext.createAnalyser();
                     this.analyser.fftSize = 2048;
@@ -587,23 +589,7 @@
             playHarmony() {
                 if (!this.audioContext || this.audioContext.state === 'closed') {
                     this.audioContext = new (window.AudioContext || window.webkitAudioContext)();
-                    // Setup MediaRecorder to capture audio
-                    const mediaStream = stream;
-                    this.mediaRecorder = new MediaRecorder(mediaStream);
-                    this.recordedChunks = [];
-
-                    this.mediaRecorder.ondataavailable = (event) => {
-                        if (event.data.size > 0) {
-                            this.recordedChunks.push(event.data);
-                        }
-                    };
-
-                    this.mediaRecorder.onstop = () => {
-                        this.saveRecordingBtn.disabled = false;
-                        this.playRecordingBtn.disabled = false;
-                    };
-
-                    this.mediaRecorder.start();
+                    
 
                 }
                 
@@ -711,23 +697,7 @@
                 // Create audio context
                 if (!this.audioContext) {
                     this.audioContext = new (window.AudioContext || window.webkitAudioContext)();
-                    // Setup MediaRecorder to capture audio
-                    const mediaStream = stream;
-                    this.mediaRecorder = new MediaRecorder(mediaStream);
-                    this.recordedChunks = [];
-
-                    this.mediaRecorder.ondataavailable = (event) => {
-                        if (event.data.size > 0) {
-                            this.recordedChunks.push(event.data);
-                        }
-                    };
-
-                    this.mediaRecorder.onstop = () => {
-                        this.saveRecordingBtn.disabled = false;
-                        this.playRecordingBtn.disabled = false;
-                    };
-
-                    this.mediaRecorder.start();
+                    
 
                 }
                 
@@ -782,23 +752,7 @@
                 // Create audio context if needed
                 if (!this.audioContext) {
                     this.audioContext = new (window.AudioContext || window.webkitAudioContext)();
-                    // Setup MediaRecorder to capture audio
-                    const mediaStream = stream;
-                    this.mediaRecorder = new MediaRecorder(mediaStream);
-                    this.recordedChunks = [];
-
-                    this.mediaRecorder.ondataavailable = (event) => {
-                        if (event.data.size > 0) {
-                            this.recordedChunks.push(event.data);
-                        }
-                    };
-
-                    this.mediaRecorder.onstop = () => {
-                        this.saveRecordingBtn.disabled = false;
-                        this.playRecordingBtn.disabled = false;
-                    };
-
-                    this.mediaRecorder.start();
+                    
 
                 }
                 
