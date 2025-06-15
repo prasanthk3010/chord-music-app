@@ -382,11 +382,19 @@
                     });
                     
                     this.microphone = this.audioContext.createMediaStreamSource(stream);
-                    
+
+                    // Add live monitoring (microphone → speakers)
+                    this.micGainNode = this.audioContext.createGain();
+                    this.micGainNode.gain.value = 1; // You can reduce if it's too loud
+                    this.microphone.connect(this.micGainNode);
+                    this.micGainNode.connect(this.audioContext.destination);
+
+                    // For analysis
                     this.analyser = this.audioContext.createAnalyser();
                     this.analyser.fftSize = 2048;
                     this.analyser.smoothingTimeConstant = 0.3;
                     this.microphone.connect(this.analyser);
+
                     
                     this.dataArray = new Uint8Array(this.analyser.frequencyBinCount);
                     
