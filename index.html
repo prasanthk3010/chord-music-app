@@ -216,6 +216,8 @@
         <h1>🎵 Chord Recognition & Music Generator</h1>
         
         <div class="controls">
+            <button id="saveRecordingBtn" disabled>💾 Save Recording</button>
+            <button id="playRecordingBtn" disabled>▶️ Play Recording</button>
             <button id="startBtn">🎤 Start Recording</button>
             <button id="stopBtn" disabled>⏹️ Stop</button>
             <button id="playBtn" disabled>🎵 Play Harmony</button>
@@ -288,6 +290,9 @@
                 this.isRecording = false;
                 this.isPlayingHarmony = false;
                 this.harmonies = [];
+                this.mediaRecorder = null;
+                this.recordedChunks = [];
+
                 
                 this.initializeElements();
                 this.setupEventListeners();
@@ -324,6 +329,25 @@
                 this.harmonyVolumeSlider = document.getElementById('harmonyVolume');
                 this.instrumentSelect = document.getElementById('instrument');
                 this.harmonyTypeSelect = document.getElementById('harmonyType');
+                this.saveRecordingBtn = document.getElementById('saveRecordingBtn');
+                this.playRecordingBtn = document.getElementById('playRecordingBtn');
+
+                this.saveRecordingBtn.addEventListener('click', () => {
+                    const blob = new Blob(this.recordedChunks, { type: 'audio/webm' });
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = 'recording.webm';
+                    a.click();
+                });
+
+                this.playRecordingBtn.addEventListener('click', () => {
+                    const blob = new Blob(this.recordedChunks, { type: 'audio/webm' });
+                    const url = URL.createObjectURL(blob);
+                    const audio = new Audio(url);
+                    audio.play();
+                });
+
             }
 
             setupEventListeners() {
@@ -372,6 +396,24 @@
                     this.status.textContent = 'Requesting microphone permission...';
                     
                     this.audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                    // Setup MediaRecorder to capture audio
+                    const mediaStream = stream;
+                    this.mediaRecorder = new MediaRecorder(mediaStream);
+                    this.recordedChunks = [];
+
+                    this.mediaRecorder.ondataavailable = (event) => {
+                        if (event.data.size > 0) {
+                            this.recordedChunks.push(event.data);
+                        }
+                    };
+
+                    this.mediaRecorder.onstop = () => {
+                        this.saveRecordingBtn.disabled = false;
+                        this.playRecordingBtn.disabled = false;
+                    };
+
+                    this.mediaRecorder.start();
+
                     
                     const stream = await navigator.mediaDevices.getUserMedia({ 
                         audio: {
@@ -382,24 +424,21 @@
                     });
                     
                     this.microphone = this.audioContext.createMediaStreamSource(stream);
-
-                    // Add live monitoring (microphone → speakers)
-                    this.micGainNode = this.audioContext.createGain();
-                    this.micGainNode.gain.value = 1; // You can reduce if it's too loud
-                    this.microphone.connect(this.micGainNode);
-                    this.micGainNode.connect(this.audioContext.destination);
-
-                    // For analysis
+                    
                     this.analyser = this.audioContext.createAnalyser();
                     this.analyser.fftSize = 2048;
                     this.analyser.smoothingTimeConstant = 0.3;
                     this.microphone.connect(this.analyser);
-
                     
                     this.dataArray = new Uint8Array(this.analyser.frequencyBinCount);
                     
                     this.isRecording = true;
-                    this.updateUI();
+                    
+                if (this.mediaRecorder && this.mediaRecorder.state !== 'inactive') {
+                    this.mediaRecorder.stop();
+                }
+
+                this.updateUI();
                     this.status.textContent = 'Recording started - sing or play music!';
                     this.analyze();
                     
@@ -438,9 +477,17 @@
                 if (this.microphone) {
                     this.microphone.disconnect();
                 }
+                if (this.micGainNode) {
+                    this.micGainNode.disconnect();
+                }
                 if (this.audioContext) {
                     this.audioContext.close();
                 }
+                
+                if (this.mediaRecorder && this.mediaRecorder.state !== 'inactive') {
+                    this.mediaRecorder.stop();
+                }
+
                 this.updateUI();
                 this.status.textContent = 'Recording stopped';
                 this.chordDisplay.textContent = 'Ready';
@@ -540,9 +587,32 @@
             playHarmony() {
                 if (!this.audioContext || this.audioContext.state === 'closed') {
                     this.audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                    // Setup MediaRecorder to capture audio
+                    const mediaStream = stream;
+                    this.mediaRecorder = new MediaRecorder(mediaStream);
+                    this.recordedChunks = [];
+
+                    this.mediaRecorder.ondataavailable = (event) => {
+                        if (event.data.size > 0) {
+                            this.recordedChunks.push(event.data);
+                        }
+                    };
+
+                    this.mediaRecorder.onstop = () => {
+                        this.saveRecordingBtn.disabled = false;
+                        this.playRecordingBtn.disabled = false;
+                    };
+
+                    this.mediaRecorder.start();
+
                 }
                 
                 this.isPlayingHarmony = true;
+                
+                if (this.mediaRecorder && this.mediaRecorder.state !== 'inactive') {
+                    this.mediaRecorder.stop();
+                }
+
                 this.updateUI();
                 this.generateHarmony();
             }
@@ -556,6 +626,9 @@
                 const instrument = this.instrumentSelect.value;
                 
                 this.harmonies = [];
+                this.mediaRecorder = null;
+                this.recordedChunks = [];
+
                 
                 const frequencies = this.getHarmonyFrequencies(baseFreq, harmonyType);
                 
@@ -603,6 +676,14 @@
                     harmony.oscillator.stop();
                 });
                 this.harmonies = [];
+                this.mediaRecorder = null;
+                this.recordedChunks = [];
+
+                
+                if (this.mediaRecorder && this.mediaRecorder.state !== 'inactive') {
+                    this.mediaRecorder.stop();
+                }
+
                 this.updateUI();
             }
 
@@ -614,6 +695,11 @@
             startDemo() {
                 this.status.textContent = 'Demo Mode: Playing chord progression with harmony...';
                 this.isRecording = true;
+                
+                if (this.mediaRecorder && this.mediaRecorder.state !== 'inactive') {
+                    this.mediaRecorder.stop();
+                }
+
                 this.updateUI();
                 this.runDemo();
             }
@@ -625,13 +711,36 @@
                 // Create audio context
                 if (!this.audioContext) {
                     this.audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                    // Setup MediaRecorder to capture audio
+                    const mediaStream = stream;
+                    this.mediaRecorder = new MediaRecorder(mediaStream);
+                    this.recordedChunks = [];
+
+                    this.mediaRecorder.ondataavailable = (event) => {
+                        if (event.data.size > 0) {
+                            this.recordedChunks.push(event.data);
+                        }
+                    };
+
+                    this.mediaRecorder.onstop = () => {
+                        this.saveRecordingBtn.disabled = false;
+                        this.playRecordingBtn.disabled = false;
+                    };
+
+                    this.mediaRecorder.start();
+
                 }
                 
                 const playNextChord = () => {
                     if (!this.isRecording || currentChord >= chords.length * 2) {
                         this.status.textContent = 'Demo completed!';
                         this.isRecording = false;
-                        this.updateUI();
+                        
+                if (this.mediaRecorder && this.mediaRecorder.state !== 'inactive') {
+                    this.mediaRecorder.stop();
+                }
+
+                this.updateUI();
                         return;
                     }
                     
@@ -673,6 +782,24 @@
                 // Create audio context if needed
                 if (!this.audioContext) {
                     this.audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                    // Setup MediaRecorder to capture audio
+                    const mediaStream = stream;
+                    this.mediaRecorder = new MediaRecorder(mediaStream);
+                    this.recordedChunks = [];
+
+                    this.mediaRecorder.ondataavailable = (event) => {
+                        if (event.data.size > 0) {
+                            this.recordedChunks.push(event.data);
+                        }
+                    };
+
+                    this.mediaRecorder.onstop = () => {
+                        this.saveRecordingBtn.disabled = false;
+                        this.playRecordingBtn.disabled = false;
+                    };
+
+                    this.mediaRecorder.start();
+
                 }
                 
                 // Play chord with harmony
@@ -694,6 +821,9 @@
                     try { harmony.oscillator.stop(); } catch(e) {}
                 });
                 this.harmonies = [];
+                this.mediaRecorder = null;
+                this.recordedChunks = [];
+
                 
                 const frequencies = this.getHarmonyFrequencies(baseFreq, harmonyType);
                 
