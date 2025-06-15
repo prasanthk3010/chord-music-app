@@ -393,39 +393,51 @@
                         throw new Error('getUserMedia is not supported in this browser');
                     }
                     
-                    this.status.textContent = 'Requesting microphone permission...';
-                    
                     this.audioContext = new (window.AudioContext || window.webkitAudioContext)();
-                    
-
-                    
                     const stream = await navigator.mediaDevices.getUserMedia({ 
-                        audio: {
+                    audio: {
+                    echoCancellation: false,
+                    noiseSuppression: false,
+                    autoGainControl: false
+                   } 
+                   });
 
-                            echoCancellation: false,
-                            noiseSuppression: false,
-                            autoGainControl: false
-                        } 
-                    });
+                   // Setup MediaRecorder AFTER stream is declared
+                   this.mediaRecorder = new MediaRecorder(stream);
+                   this.recordedChunks = [];
+
+                   this.mediaRecorder.ondataavailable = (event) => {
+                   if (event.data.size > 0) {
+                   this.recordedChunks.push(event.data);
+                   }
+                 };
+
+                   this.mediaRecorder.onstop = () => {
+                   this.saveRecordingBtn.disabled = false;
+                   this.playRecordingBtn.disabled = false;
+                   };
+
+                   this.mediaRecorder.start();
+
                     
                     this.microphone = this.audioContext.createMediaStreamSource(stream);
 
-// Setup MediaRecorder to capture audio
-this.mediaRecorder = new MediaRecorder(stream);
-this.recordedChunks = [];
+                    // Setup MediaRecorder to capture audio
+                    this.mediaRecorder = new MediaRecorder(stream);
+                    this.recordedChunks = [];
 
-this.mediaRecorder.ondataavailable = (event) => {
-    if (event.data.size > 0) {
-        this.recordedChunks.push(event.data);
-    }
-};
+                    this.mediaRecorder.ondataavailable = (event) => {
+                    if (event.data.size > 0) {
+                    this.recordedChunks.push(event.data);
+                    }
+                    };
 
-this.mediaRecorder.onstop = () => {
-    this.saveRecordingBtn.disabled = false;
-    this.playRecordingBtn.disabled = false;
-};
+                    this.mediaRecorder.onstop = () => {
+                    this.saveRecordingBtn.disabled = false;
+                    this.playRecordingBtn.disabled = false;
+                    };
 
-this.mediaRecorder.start();
+                    this.mediaRecorder.start();
                     
                     this.analyser = this.audioContext.createAnalyser();
                     this.analyser.fftSize = 2048;
